@@ -1,0 +1,91 @@
+diff --git a/commands/gpt-commit.js b/commands/gpt-commit.js
+index 4197cd5..9157e2d 100755
+--- a/commands/gpt-commit.js
++++ b/commands/gpt-commit.js
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env node
+ import { Configuration, OpenAIApi } from "openai";
+-import { promisify } from 'util';
+-import { exec as originalExec, execSync } from 'child_process';
++import { promisify } from "util";
++import { exec as originalExec, execSync } from "child_process";
+ import prompts from "prompts";
+ 
+ let openai;
+@@ -11,10 +11,11 @@ export async function getGitSummary() {
+     const dotenv = await import("dotenv");
+     dotenv.config();
+     const configuration = new Configuration({
+-      apiKey: process.env.OPENAI_API_KEY
++      apiKey: process.env.OPENAI_API_KEY,
++      basePath: process.env.OPENAI_BASE_PATH,
+     });
+     openai = new OpenAIApi(configuration);
+-    
++
+     const exec = promisify(originalExec);
+     const { stdout } = await exec("git diff --cached");
+     const summary = stdout.trim();
+@@ -23,17 +24,16 @@ export async function getGitSummary() {
+     }
+ 
+     return summary;
+-
+   } catch (error) {
+     console.error("Error while summarizing Git changes:", error);
+     process.exit(1);
+   }
+ }
+ 
+-const gptCommit = async () => {
++const gptCommit = async (args) => {
+   const gitSummary = await getGitSummary();
+   if (!gitSummary) {
+-    console.log('No changes to commit. Commit canceled.');
++    console.log("No changes to commit. Commit canceled.");
+     process.exit(0);
+   }
+   const prompt = `Generate a Git commit message based on the following summary: ${gitSummary}\n\nCommit message: `;
+@@ -44,7 +44,7 @@ const gptCommit = async () => {
+     max_tokens: 50,
+     n: 1,
+     stop: null,
+-};
++  };
+ 
+   const response = await openai.createCompletion(parameters);
+ 
+@@ -58,6 +58,11 @@ const gptCommit = async () => {
+   });
+ 
+   if (confirm.value) {
++    const [p] = args;
++    if (p) {
++      console.log(message);
++      return;
++    }
+     execSync(`git commit -m "${message}"`);
+     console.log("Committed with the suggested message.");
+   } else {
+diff --git a/index.js b/index.js
+index 86db12e..41d15d3 100755
+--- a/index.js
++++ b/index.js
+@@ -11,10 +11,16 @@ const gitExtension = (args) => {
+     .command("commit")
+     .description("Generate a Git commit message based on the summary of changes")
+     .action(async () => {
+-      await gptCommit();
++      await gptCommit(...rest);
+     });
+ 
+     // Add more commands here
++  // program
++  //   .command("cms")
++  //   .description("Generate a git commit message based on the summary of changes, just print it out")
++  //   .action(async () ={
++  //     await gptCommit();
++  //   })
+ 
+   // Handle invalid commands
+   program.on("command:*", () => {

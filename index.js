@@ -11,10 +11,16 @@ const gitExtension = (args) => {
     .command("commit")
     .description("Generate a Git commit message based on the summary of changes")
     .action(async () => {
-      await gptCommit();
+      await gptCommit(...rest);
     });
 
     // Add more commands here
+  // program
+  //   .command("cms")
+  //   .description("Generate a git commit message based on the summary of changes, just print it out")
+  //   .action(async () ={
+  //     await gptCommit();
+  //   })
 
   // Handle invalid commands
   program.on("command:*", () => {
